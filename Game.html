@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeviL Style Cave Platformer</title>
+    <style>
+        /* Import Inter font for a modern, bold look */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap');
+
+        /* Global reset and basic body styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            /* Dark, atmospheric background gradient from DeviL game */
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            overflow: hidden; /* Prevent body scroll */
+            font-family: 'Inter', sans-serif; /* Apply Inter font */
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ecf0f1; /* Light text color */
+        }
+        .text-center {
+    position: fixed; /* Fixes the position relative to the viewport */
+    bottom: 10px;    /* 10px from the bottom */
+    right: 10px;     /* 10px from the right */
+    opacity: 0.5;    /* Makes the element 50% transparent */
+    /* Original styles (text-center, text-gray-400, text-sm, mt-6) should be applied as needed */
+    /* The 'mt-6' margin might need adjustment or removal depending on desired exact positioning */
+}
+        /* Canvas styling - the game area itself */
+        #gameCanvas {
+            display: block;
+            /* Darker cave background for the canvas */
+            background: linear-gradient(180deg, #0f1c2b 0%, #08101a 100%);
+            border: 6px solid #e74c3c; /* Striking red border from DeviL game */
+            border-radius: 20px; /* Rounded corners */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6); /* Deeper shadow */
+            cursor: none; /* Hide default cursor */
+            /* Ensure canvas fills available space and maintains aspect ratio */
+            max-width: 95vw; 
+            max-height: 95vh;
+            aspect-ratio: 16 / 9; /* Maintain a wide aspect ratio */
+            width: auto;
+            height: auto;
+        }
+
+        /* General UI element styling */
+        .ui, .stage-info, .controls {
+            position: absolute;
+            color: #ecf0f1; /* Light grey text */
+            font-size: 22px; /* Slightly larger for readability */
+            z-index: 10;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.8); /* Stronger shadow for readability */
+            font-weight: bold; /* Make text bolder */
+        }
+
+        .ui {
+            top: 20px;
+            left: 20px;
+        }
+        
+        .controls {
+            bottom: 20px;
+            left: 20px;
+            font-size: 16px;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-radius: 8px;
+        }
+        
+        .stage-info {
+            top: 20px;
+            right: 20px;
+            color: #ff416c; /* Vibrant red for title */
+            font-size: 24px;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.8);
+            z-index: 10;
+            text-align: right; /* Align content to the right */
+        }
+
+        .stage-info h2 {
+            font-size: 1.8em; /* Larger font size for the game name */
+            margin-bottom: 5px; /* Space below the game name */
+            color: #ff416c; /* Vibrant red */
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.8);
+        }
+
+        .stage-info div {
+            font-size: 0.9em; /* Smaller for stage/difficulty */
+            color: #ecf0f1;
+            text-shadow: none; /* Remove shadow for sub-info */
+        }
+
+
+        /* Stage and Game Complete messages */
+        .stage-complete, .game-complete {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 30px 50px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+            z-index: 15;
+            display: none; /* Hidden by default */
+            text-align: center;
+            font-weight: bold;
+            animation: scaleIn 0.3s ease-out; /* Pop-in animation */
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .stage-complete {
+            background-color: rgba(46, 204, 113, 0.95); /* Greenish background */
+            border: 4px solid #27ae60; /* Darker green border */
+            color: white;
+            font-size: 48px;
+            text-shadow: 3px 3px 0px #1e8449; /* Dark green shadow */
+        }
+        
+        .stage-complete div:last-child {
+            font-size: 22px;
+            margin-top: 15px;
+            color: #ecf0f1;
+        }
+
+        .game-complete {
+            background-color: rgba(241, 196, 15, 0.95); /* Golden background */
+            border: 4px solid #f39c12; /* Darker golden border */
+            color: #2c3e50; /* Dark text for contrast */
+            font-size: 56px;
+            text-shadow: 3px 3px 0px #e67e22; /* Orange shadow */
+        }
+        
+        .game-complete div:last-child {
+            font-size: 26px;
+            margin-top: 15px;
+            color: #34495e;
+        }
+
+        /* Pulsing animation for messages */
+        @keyframes pulse {
+            0%, 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .ui, .stage-info {
+                font-size: 18px;
+                top: 10px;
+            }
+            .ui { left: 10px; }
+            .stage-info { right: 10px; }
+            .stage-info h2 {
+                font-size: 1.5em;
+            }
+            .stage-info div {
+                font-size: 0.8em;
+            }
+            .controls {
+                font-size: 14px;
+                bottom: 10px;
+                left: 10px;
+                padding: 5px 10px;
+            }
+            .stage-complete {
+                font-size: 36px;
+                padding: 20px 30px;
+            }
+            .stage-complete div:last-child {
+                font-size: 18px;
+            }
+            .game-complete {
+                font-size: 44px;
+                padding: 25px 35px;
+            }
+            .game-complete div:last-child {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ui, .stage-info {
+                font-size: 16px;
+            }
+            .stage-info h2 {
+                font-size: 1.2em;
+            }
+            .stage-info div {
+                font-size: 0.7em;
+            }
+            .controls {
+                font-size: 12px;
+            }
+            .stage-complete {
+                font-size: 28px;
+                padding: 15px 20px;
+            }
+            .stage-complete div:last-child {
+                font-size: 16px;
+            }
+            .game-complete {
+                font-size: 36px;
+                padding: 20px 25px;
+            }
+            .game-complete div:last-child {
+                font-size: 18px;
+            }
+  
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+    </div>
+    
+    <div class="stage-info">
+        <h2>DeviL</h2>
+        <div>Stage: <span id="stage">1</span> / 3</div>
+        <div id="difficulty">EASY</div>
+        <div class="text-center text-gray-400 text-sm mt-6 opacity-75">
+        Developed by Abhinand AR
+    </div>
+    </div>
+    
+    <div class="controls">
+        <div>ARROW KEYS: Move | SPACE: Jump</div>
+        <div>R: Restart Stage | N: Next Stage (when complete)</div>
+    </div>
+    
+    <div class="stage-complete pulse" id="stageComplete">
+        <div>STAGE COMPLETE!</div>
+        <div style="font-size: 24px; margin-top: 20px;">Collect 70% of gems to proceed</div>
+        <div style="font-size: 18px; margin-top: 10px;">Press N for Next Stage</div>
+    </div>
+    
+    <div class="game-complete pulse" id="gameComplete">
+        <div>GAME COMPLETE!</div>
+        <div style="font-size: 32px; margin-top: 20px;">Final Score: <span id="finalScore">0</span></div>
+        <div style="font-size: 18px; margin-top: 10px;">Press R to Play Again</div>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full screen and make it responsive
+        function resizeCanvas() {
+            // Keep aspect ratio 16:9
+            const aspectRatio = 16 / 9;
+            let width = window.innerWidth * 0.95; // Use 95% of window width
+            let height = width / aspectRatio;
+
+            if (height > window.innerHeight * 0.95) { // If height exceeds 95% of window height
+                height = window.innerHeight * 0.95;
+                width = height * aspectRatio;
+            }
+            canvas.width = width;
+            canvas.height = height;
+        }
+        
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Game state
+        const game = {
+            score: 0,
+            lives: 3,
+            stage: 1,
+            camera: { x: 0, y: 0 },
+            particles: [],
+            platforms: [],
+            enemies: [],
+            collectibles: [],
+            stageComplete: false,
+            gameComplete: false,
+            worldWidth: 3000, /* Large enough for horizontal scrolling */
+            worldHeight: 800 /* Conceptual height for level design */
+        };
+        
+        // Player object
+        const player = {
+            x: 100,
+            y: 400, /* Initial y-position, will be adjusted by initStage */
+            width: 24,
+            height: 32,
+            vx: 0,
+            vy: 0,
+            grounded: false,
+            color: '#3498db', /* Player body color from DeviL game */
+            speed: 6,
+            jumpPower: 16,
+            deathCounter: 0 /* For death animation/invincibility */
+        };
+        
+        // Input handling
+        const keys = {};
+        
+        document.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if (e.code === 'KeyR' && (game.stageComplete || game.gameComplete || game.lives <= 0)) {
+                restartStage();
+            }
+            if (e.code === 'KeyN' && game.stageComplete && game.stage < 3) {
+                nextStage();
+            }
+            if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+                e.preventDefault(); // Prevent page scrolling
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        // Platform class
+        class Platform {
+            constructor(x, y, width, height, type = 'stone') {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.type = type;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(-game.camera.x, -game.camera.y);
+                
+                if (this.type === 'stone') {
+                    ctx.fillStyle = '#4a5568'; /* Dark blue-grey stone */
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    
+                    ctx.strokeStyle = '#2d3748'; /* Darker lines for stone texture */
+                    ctx.lineWidth = 2;
+                    for (let i = 0; i < this.width; i += 32) {
+                        for (let j = 0; j < this.height; j += 32) {
+                            ctx.strokeRect(this.x + i, this.y + j, 32, 32);
+                        }
+                    }
+                } else if (this.type === 'crystal') {
+                    ctx.fillStyle = '#00d2d3'; /* Teal crystal color */
+                    ctx.shadowColor = '#00d2d3';
+                    ctx.shadowBlur = 15; /* Glow effect */
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.shadowBlur = 0; /* Reset shadow */
+                } else if (this.type === 'lava') {
+                    const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.height);
+                    gradient.addColorStop(0, '#ff416c'); /* Red-pink lava top */
+                    gradient.addColorStop(1, '#c0392b'); /* Darker red-pink lava bottom */
+                    ctx.fillStyle = gradient;
+                    ctx.shadowColor = '#ff416c';
+                    ctx.shadowBlur = 20; /* Strong lava glow */
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.shadowBlur = 0; /* Reset shadow */
+                }
+                
+                ctx.restore();
+            }
+        }
+        
+        // Enemy class
+        class Enemy {
+            constructor(x, y, speed = 2) {
+                this.x = x;
+                this.y = y;
+                this.width = 20;
+                this.height = 20;
+                this.vx = speed;
+                this.color = '#e74c3c'; /* Red enemy color */
+                this.patrolStart = x - 100;
+                this.patrolEnd = x + 100;
+            }
+            
+            update() {
+                this.x += this.vx;
+                
+                if (this.x <= this.patrolStart || this.x >= this.patrolEnd) {
+                    this.vx *= -1;
+                }
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(-game.camera.x, -game.camera.y);
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 15; /* Glow effect for enemies */
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.shadowBlur = 0; /* Reset shadow */
+                ctx.restore();
+            }
+        }
+        
+        // Collectible class
+        class Collectible {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.width = 16;
+                this.height = 16;
+                this.collected = false;
+                this.bobOffset = Math.random() * Math.PI * 2;
+            }
+            
+            update() {
+                this.bobOffset += 0.1;
+            }
+            
+            draw() {
+                if (this.collected) return;
+                
+                ctx.save();
+                ctx.translate(-game.camera.x, -game.camera.y);
+                
+                const bobY = Math.sin(this.bobOffset) * 5;
+                ctx.fillStyle = '#f1c40f'; /* Gold/yellow for collectibles */
+                ctx.shadowColor = '#f1c40f';
+                ctx.shadowBlur = 10; /* Glow effect for collectibles */
+                ctx.fillRect(this.x, this.y + bobY, this.width, this.height);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Particle system
+        function createParticle(x, y, color = null) {
+            return {
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 6,
+                vy: (Math.random() - 0.5) * 6,
+                life: 60,
+                maxLife: 60,
+                color: color || `hsl(${Math.random() * 60 + 15}, 80%, 60%)`
+            };
+        }
+        
+        function updateParticles() {
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const p = game.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                
+                if (p.life <= 0) {
+                    game.particles.splice(i, 1);
+                }
+            }
+        }
+        
+        function drawParticles() {
+            game.particles.forEach(p => {
+                ctx.save();
+                ctx.translate(-game.camera.x, -game.camera.y);
+                ctx.globalAlpha = p.life / p.maxLife;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 4, 4);
+                ctx.restore();
+            });
+        }
+        
+        // Stage configurations
+        function initStage(stageNum) {
+            game.platforms = [];
+            game.enemies = [];
+            game.collectibles = [];
+            game.stageComplete = false;
+            
+            // Player reset position relative to the stage ground
+            player.x = 100;
+            player.y = canvas.height - 150; // Place player on a starting platform
+            player.vx = 0;
+            player.vy = 0;
+            player.deathCounter = 0; // Reset death invincibility
+            
+            // Main ground platform reference point (adjust based on canvas height)
+            const groundY = canvas.height - 50; 
+            
+            if (stageNum === 1) {
+                // EASY STAGE
+                document.getElementById('difficulty').textContent = 'EASY';
+                
+                // Platforms
+                game.platforms = [
+                    new Platform(0, groundY, 300, 50), /* Starting ground */
+                    new Platform(400, groundY - 100, 200, 30),
+                    new Platform(700, groundY - 50, 150, 30),
+                    new Platform(950, groundY - 150, 180, 30),
+                    new Platform(1200, groundY - 70, 200, 30),
+                    new Platform(1500, groundY - 200, 150, 30),
+                    new Platform(1750, groundY - 100, 200, 30),
+                    new Platform(2050, groundY - 50, 150, 30),
+                    new Platform(2300, groundY - 150, 200, 30),
+                    new Platform(2600, groundY, 400, 50), /* End ground */
+                    // Top and bottom boundaries (invisible)
+                    new Platform(0, 0, game.worldWidth, 30, 'stone'), 
+                    new Platform(0, canvas.height - 30, game.worldWidth, 30, 'stone')
+                ];
+                
+                // Enemies
+                game.enemies = [
+                    new Enemy(500, groundY - 130, 1.5),
+                    new Enemy(1100, groundY - 100, 1.5),
+                    new Enemy(1900, groundY - 130, 1.5)
+                ];
+                
+                // Collectibles
+                game.collectibles = [
+                    new Collectible(450, groundY - 130),
+                    new Collectible(750, groundY - 80),
+                    new Collectible(1000, groundY - 180),
+                    new Collectible(1550, groundY - 230),
+                    new Collectible(1800, groundY - 130),
+                    new Collectible(2350, groundY - 180),
+                    new Collectible(2800, groundY - 80)
+                ];
+                
+            } else if (stageNum === 2) {
+                // MEDIUM STAGE
+                document.getElementById('difficulty').textContent = 'MEDIUM';
+                
+                // More complex platforms with some crystal ones
+                game.platforms = [
+                    new Platform(0, groundY, 250, 50),
+                    new Platform(350, groundY - 70, 120, 30),
+                    new Platform(550, groundY - 170, 100, 30),
+                    new Platform(750, groundY - 110, 80, 30, 'crystal'),
+                    new Platform(900, groundY - 230, 150, 30),
+                    new Platform(1150, groundY - 130, 100, 30),
+                    new Platform(1350, groundY - 270, 120, 30, 'crystal'),
+                    new Platform(1550, groundY - 170, 100, 30),
+                    new Platform(1750, groundY - 70, 80, 30),
+                    new Platform(1900, groundY - 230, 150, 30),
+                    new Platform(2150, groundY - 130, 100, 30, 'crystal'),
+                    new Platform(2350, groundY - 300, 120, 30),
+                    new Platform(2600, groundY - 200, 100, 30),
+                    new Platform(2800, groundY - 100, 200, 50),
+                    // Top and bottom boundaries (invisible)
+                    new Platform(0, 0, game.worldWidth, 30, 'stone'), 
+                    new Platform(0, canvas.height - 30, game.worldWidth, 30, 'stone')
+                ];
+                
+                // More enemies with medium speed
+                game.enemies = [
+                    new Enemy(400, groundY - 100, 2.5),
+                    new Enemy(600, groundY - 200, 2),
+                    new Enemy(800, groundY - 140, 2.5),
+                    new Enemy(1200, groundY - 160, 2),
+                    new Enemy(1600, groundY - 200, 2.5),
+                    new Enemy(1950, groundY - 260, 2),
+                    new Enemy(2400, groundY - 330, 2.5)
+                ];
+                
+                // More collectibles
+                game.collectibles = [
+                    new Collectible(400, groundY - 100),
+                    new Collectible(600, groundY - 200),
+                    new Collectible(800, groundY - 140),
+                    new Collectible(1000, groundY - 260),
+                    new Collectible(1200, groundY - 160),
+                    new Collectible(1400, groundY - 300),
+                    new Collectible(1600, groundY - 200),
+                    new Collectible(1800, groundY - 100),
+                    new Collectible(2000, groundY - 260),
+                    new Collectible(2200, groundY - 160),
+                    new Collectible(2400, groundY - 330),
+                    new Collectible(2850, groundY - 130)
+                ];
+                
+            } else if (stageNum === 3) {
+                // HARD STAGE
+                document.getElementById('difficulty').textContent = 'HARD';
+                
+                // Complex platforms with lava hazards
+                game.platforms = [
+                    new Platform(0, groundY, 200, 50),
+                    new Platform(300, groundY - 100, 80, 30),
+                    new Platform(450, groundY - 200, 80, 30, 'crystal'),
+                    new Platform(600, groundY - 130, 60, 30),
+                    new Platform(750, groundY - 270, 100, 30, 'lava'), /* Lava */
+                    new Platform(950, groundY - 170, 80, 30),
+                    new Platform(1100, groundY - 300, 80, 30, 'crystal'),
+                    new Platform(1250, groundY - 230, 60, 30),
+                    new Platform(1400, groundY - 130, 80, 30),
+                    new Platform(1550, groundY - 330, 100, 30, 'lava'), /* Lava */
+                    new Platform(1750, groundY - 200, 80, 30),
+                    new Platform(1900, groundY - 100, 60, 30, 'crystal'),
+                    new Platform(2050, groundY - 270, 80, 30),
+                    new Platform(2200, groundY - 170, 100, 30, 'lava'), /* Lava */
+                    new Platform(2400, groundY - 300, 80, 30),
+                    new Platform(2550, groundY - 130, 60, 30),
+                    new Platform(2700, groundY - 230, 100, 30, 'crystal'),
+                    new Platform(2900, groundY, 100, 50),
+                    // Top and bottom boundaries (invisible)
+                    new Platform(0, 0, game.worldWidth, 30, 'stone'), 
+                    new Platform(0, canvas.height - 30, game.worldWidth, 30, 'stone')
+                ];
+                
+                // Many fast enemies
+                game.enemies = [
+                    new Enemy(350, groundY - 130, 3.5),
+                    new Enemy(500, groundY - 230, 3),
+                    new Enemy(650, groundY - 160, 3.5),
+                    new Enemy(1000, groundY - 200, 3),
+                    new Enemy(1150, groundY - 330, 3.5),
+                    new Enemy(1300, groundY - 260, 3),
+                    new Enemy(1450, groundY - 160, 3.5),
+                    new Enemy(1800, groundY - 360, 3),
+                    new Enemy(1950, groundY - 130, 3.5),
+                    new Enemy(2100, groundY - 300, 3),
+                    new Enemy(2250, groundY - 200, 3.5),
+                    new Enemy(2450, groundY - 330, 3),
+                    new Enemy(2750, groundY - 260, 3.5)
+                ];
+                
+                // Many collectibles for high score
+                game.collectibles = [
+                    new Collectible(350, groundY - 130),
+                    new Collectible(500, groundY - 230),
+                    new Collectible(650, groundY - 160),
+                    new Collectible(800, groundY - 300),
+                    new Collectible(1000, groundY - 200),
+                    new Collectible(1150, groundY - 330),
+                    new Collectible(1300, groundY - 260),
+                    new Collectible(1450, groundY - 160),
+                    new Collectible(1600, groundY - 360),
+                    new Collectible(1800, groundY - 230),
+                    new Collectible(1950, groundY - 130),
+                    new Collectible(2100, groundY - 300),
+                    new Collectible(2250, groundY - 200),
+                    new Collectible(2450, groundY - 330),
+                    new Collectible(2600, groundY - 160),
+                    new Collectible(2750, groundY - 260),
+                    new Collectible(2950, groundY - 80)
+                ];
+            }
+        }
+        
+        // Collision detection
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        // Update player
+        function updatePlayer() {
+            if (game.stageComplete || game.gameComplete) return;
+
+            // Apply temporary invincibility after taking damage
+            if (player.deathCounter > 0) {
+                player.deathCounter--;
+                // Flash player for invincibility visual feedback
+                player.color = player.deathCounter % 10 < 5 ? 'rgba(52, 152, 219, 0.5)' : '#3498db';
+            } else {
+                player.color = '#3498db'; // Normal color
+            }
+            
+            // Handle input
+            if (keys['ArrowLeft'] || keys['KeyA']) player.vx = -player.speed;
+            else if (keys['ArrowRight'] || keys['KeyD']) player.vx = player.speed;
+            else player.vx *= 0.8; // Decelerate slowly
+            
+            if ((keys['Space'] || keys['ArrowUp'] || keys['KeyW']) && player.grounded) {
+                player.vy = -player.jumpPower;
+                player.grounded = false;
+            }
+            
+            // Apply gravity
+            player.vy += 0.8; // Consistent gravity
+            
+            // Update position
+            player.x += player.vx;
+            player.y += player.vy;
+            
+            // Check platform collisions
+            player.grounded = false; // Reset grounded state each frame
+            
+            game.platforms.forEach(platform => {
+                if (checkCollision(player, platform)) {
+                    // Lava platforms cause damage if not invincible
+                    if (platform.type === 'lava') {
+                        if (player.deathCounter === 0) { // Only take damage if not invincible
+                            for (let i = 0; i < 15; i++) {
+                                game.particles.push(createParticle(player.x + player.width/2, player.y + player.height/2, '#ff416c'));
+                            }
+                            game.lives--;
+                            player.deathCounter = 60; // 1 second invincibility frames
+                            // Respawn player
+                            player.x = 100;
+                            player.y = canvas.height - 150; // Initial spawn point
+                            player.vx = 0;
+                            player.vy = 0;
+                            
+                            if (game.lives <= 0) {
+                                restartStage(); // Game over if lives run out
+                            }
+                        }
+                        return; // Exit collision check for this platform
+                    }
+                    
+                    // Top collision (landing)
+                    if (player.vy > 0 && player.y < platform.y) {
+                        player.y = platform.y - player.height;
+                        player.vy = 0;
+                        player.grounded = true;
+                    }
+                    // Bottom collision (hitting ceiling)
+                    else if (player.vy < 0 && player.y > platform.y) {
+                        player.y = platform.y + platform.height;
+                        player.vy = 0;
+                    }
+                    // Side collisions
+                    else if (player.vx > 0 && player.x < platform.x) {
+                        player.x = platform.x - player.width;
+                        player.vx = 0;
+                    }
+                    else if (player.vx < 0 && player.x > platform.x) {
+                        player.x = platform.x + platform.width;
+                        player.vx = 0;
+                    }
+                }
+            });
+            
+            // Check enemy collisions
+            game.enemies.forEach(enemy => {
+                if (checkCollision(player, enemy)) {
+                    if (player.deathCounter === 0) { // Only take damage if not invincible
+                        for (let i = 0; i < 12; i++) {
+                            game.particles.push(createParticle(player.x + player.width/2, player.y + player.height/2, '#e74c3c'));
+                        }
+                        
+                        game.lives--;
+                        player.deathCounter = 60; // 1 second invincibility frames
+                        // Respawn player
+                        player.x = 100;
+                        player.y = canvas.height - 150; // Initial spawn point
+                        player.vx = 0;
+                        player.vy = 0;
+                        
+                        if (game.lives <= 0) {
+                            restartStage(); // Game over if lives run out
+                        }
+                    }
+                }
+            });
+            
+            // Check collectible collisions
+            game.collectibles.forEach(collectible => {
+                if (!collectible.collected && checkCollision(player, collectible)) {
+                    collectible.collected = true;
+                    game.score += 150;
+                    
+                    for (let i = 0; i < 8; i++) {
+                        game.particles.push(createParticle(collectible.x + 8, collectible.y + 8, '#f1c40f'));
+                    }
+                }
+            });
+            
+            // Check if player falls off the bottom of the screen (into abyss)
+            if (player.y > canvas.height + 50) { // Give some buffer
+                if (player.deathCounter === 0) { // Prevent multiple deaths
+                    game.lives--;
+                    player.deathCounter = 60; // Invincibility briefly
+                    // Respawn player
+                    player.x = 100;
+                    player.y = canvas.height - 150;
+                    player.vx = 0;
+                    player.vy = 0;
+
+                    if (game.lives <= 0) {
+                        restartStage();
+                    }
+                }
+            }
+
+            // Check if stage is complete (player reaches end and collects most gems)
+            const collectedGems = game.collectibles.filter(c => c.collected).length;
+            const totalGems = game.collectibles.length;
+            
+            if (player.x > game.worldWidth - 100 && collectedGems >= Math.floor(totalGems * 0.7) && !game.stageComplete) {
+                game.stageComplete = true;
+                document.getElementById('stageComplete').style.display = 'block';
+                
+                // Bonus points for completing stage
+                game.score += 500 * game.stage;
+                
+                // Check if game is complete (all stages done)
+                if (game.stage >= 3) {
+                    setTimeout(() => {
+                        game.gameComplete = true;
+                        document.getElementById('stageComplete').style.display = 'none';
+                        document.getElementById('gameComplete').style.display = 'block';
+                        document.getElementById('finalScore').textContent = game.score;
+                    }, 1000); // Short delay before showing game complete
+                }
+            }
+            
+            // Update camera to follow player, clamping within world bounds
+            game.camera.x = player.x - canvas.width / 2;
+            game.camera.y = player.y - canvas.height / 2;
+            
+            // Constrain camera to world boundaries
+            game.camera.x = Math.max(0, Math.min(game.camera.x, game.worldWidth - canvas.width));
+            game.camera.y = Math.max(0, Math.min(game.camera.y, game.worldHeight - canvas.height)); /* Adjust for actual canvas height */
+        }
+        
+        // Draw player with Devil-style elements
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(-game.camera.x, -game.camera.y);
+            
+            // Draw player body with glow
+            ctx.fillStyle = player.color;
+            ctx.shadowColor = player.color;
+            ctx.shadowBlur = 12;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.shadowBlur = 0; // Reset shadow
+
+            // Draw simple devil horns (triangles)
+            ctx.fillStyle = '#c0392b'; /* Red for horns */
+            // Left horn
+            ctx.beginPath();
+            ctx.moveTo(player.x + 4, player.y);
+            ctx.lineTo(player.x + 8, player.y - 8);
+            ctx.lineTo(player.x + 12, player.y);
+            ctx.fill();
+            // Right horn
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width - 4, player.y);
+            ctx.lineTo(player.x + player.width - 8, player.y - 8);
+            ctx.lineTo(player.x + player.width - 12, player.y);
+            ctx.fill();
+
+            // Draw a simple devil tail (small curve)
+            ctx.strokeStyle = '#c0392b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(player.x + player.width, player.y + player.height * 0.7);
+            ctx.quadraticCurveTo(
+                player.x + player.width + 10, player.y + player.height * 0.5,
+                player.x + player.width + 5, player.y + player.height * 0.9
+            );
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+        
+        // Draw background with dynamic elements
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            
+            // Stage-specific color gradients for background
+            if (game.stage === 1) {
+                gradient.addColorStop(0, '#2d3748');
+                gradient.addColorStop(0.5, '#1a202c');
+                gradient.addColorStop(1, '#0f0f0f');
+            } else if (game.stage === 2) {
+                gradient.addColorStop(0, '#2d2748'); /* More purple hue */
+                gradient.addColorStop(0.5, '#1a1a2c');
+                gradient.addColorStop(1, '#0f0f1f');
+            } else {
+                gradient.addColorStop(0, '#482d27'); /* More reddish hue */
+                gradient.addColorStop(0.5, '#2c1a1a');
+                gradient.addColorStop(1, '#1f0f0f');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw atmospheric background elements (stalagmites/stalactites)
+            ctx.save();
+            ctx.translate(-game.camera.x * 0.3, -game.camera.y * 0.3); // Parallax effect
+            
+            ctx.fillStyle = 'rgba(26, 26, 46, 0.8)'; /* Dark transparent color */
+            for (let i = 0; i < 20; i++) {
+                const x = i * 200 + Math.sin(i * 0.7) * 80;
+                const topHeight = 60 + Math.sin(i * 0.5) * 40;
+                const bottomHeight = 60 + Math.cos(i * 0.5) * 40;
+
+                // Stalactite (from top)
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x + 20, topHeight);
+                ctx.lineTo(x - 20, topHeight);
+                ctx.closePath();
+                ctx.fill();
+
+                // Stalagmite (from bottom)
+                ctx.beginPath();
+                ctx.moveTo(x, game.worldHeight);
+                ctx.lineTo(x + 20, game.worldHeight - bottomHeight);
+                ctx.lineTo(x - 20, game.worldHeight - bottomHeight);
+                ctx.closePath();
+                ctx.fill();
+            }
+            
+            ctx.restore();
+        }
+        
+        // Main game loop
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+            
+            drawBackground(); // Draw background first
+            
+            // Update game objects (only if game is not complete or stage complete)
+            if (!game.stageComplete && !game.gameComplete) {
+                updatePlayer();
+                game.enemies.forEach(enemy => enemy.update());
+                game.collectibles.forEach(collectible => collectible.update());
+            }
+            updateParticles(); // Particles update regardless of game state for lingering effects
+            
+            // Draw game objects
+            game.platforms.forEach(platform => platform.draw());
+            game.enemies.forEach(enemy => enemy.draw());
+            game.collectibles.forEach(collectible => collectible.draw());
+            drawParticles();
+            drawPlayer();
+            
+            // Update UI elements
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('lives').textContent = game.lives;
+            document.getElementById('stage').textContent = game.stage;
+            
+            requestAnimationFrame(gameLoop); // Loop recursively
+        }
+        
+        // Next stage function
+        function nextStage() {
+            if (game.stage < 3) {
+                game.stage++;
+                initStage(game.stage);
+                document.getElementById('stageComplete').style.display = 'none';
+            }
+        }
+        
+        // Restart current stage or entire game
+        function restartStage() {
+            if (game.gameComplete) {
+                // Reset entire game on full completion
+                game.score = 0;
+                game.stage = 1;
+                game.gameComplete = false;
+            }
+            game.lives = 3; // Reset lives
+            game.particles = []; // Clear particles
+            initStage(game.stage); // Re-initialize current stage
+            document.getElementById('stageComplete').style.display = 'none';
+            document.getElementById('gameComplete').style.display = 'none';
+        }
+        
+        // Initialize and start game when window loads
+        window.onload = function() {
+            initStage(game.stage); // Initialize the first stage
+            gameLoop(); // Start the main game loop
+            
+            // Add ambient particles for atmosphere
+            setInterval(() => {
+                if (game.particles.length < 50) { // Keep particle count reasonable
+                    const colors = ['#f1c40f', '#00d2d3', '#ff416c']; // Gold, Teal, Red-Pink
+                    game.particles.push(createParticle(
+                        Math.random() * game.worldWidth,
+                        Math.random() * canvas.height,
+                        colors[Math.floor(Math.random() * colors.length)]
+                    ));
+                }
+            }, 300); // Add a new particle every 300ms
+        };
+    </script>
+</body>
+</html>

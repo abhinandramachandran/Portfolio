@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>eLedger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Orbitron for neon headings, Inter for general text -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <!-- jsPDF library for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        /* Custom CSS for Neon Effect */
+        :root {
+            --neon-cyan: #0dffff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff00;
+            --neon-yellow: #ffff00;
+            --neon-purple: #8a2be2; /* BlueViolet */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d1a; /* Dark background for neon */
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Changed to center for better landscape alignment */
+            min-height: 100vh; /* Ensure it takes full viewport height */
+            padding: 20px;
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        .neon-text-main {
+            font-family: 'Orbitron', sans-serif;
+            text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px var(--neon-cyan), 0 0 80px var(--neon-cyan), 0 0 90px var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        /* Neon box for the main container - now purple */
+        .neon-box {
+            background-color: #1a1a33; /* Slightly lighter dark background for cards */
+            border: 2px solid var(--neon-purple); /* Purple neon border for main box */
+            box-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple);
+            border-radius: 15px; /* Rounded corners for boxes */
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Specific neon color for Current Balance text - now green */
+        #currentBalance {
+            color: var(--neon-green);
+            text-shadow: 0 0 5px var(--neon-green), 0 0 10px var(--neon-green), 0 0 20px var(--neon-green), 0 0 40px var(--neon-green);
+        }
+
+        .neon-button {
+            background-color: #007bff; /* Base button color, will be overshadowed by shadow */
+            color: #fff;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        /* Income button specific neon - green */
+        #addIncomeBtn {
+            box-shadow: 0 0 5px var(--neon-green), 0 0 15px var(--neon-green);
+            border-radius: 10px;
+        }
+        #addIncomeBtn:hover {
+            box-shadow: 0 0 10px var(--neon-green), 0 0 25px var(--neon-green), 0 0 40px var(--neon-green);
+            transform: translateY(-2px);
+        }
+        /* Expense button specific neon - pink */
+        #addExpenseBtn {
+            box-shadow: 0 0 5px var(--neon-pink), 0 0 15px var(--neon-pink);
+            border-radius: 10px;
+        }
+        #addExpenseBtn:hover {
+            box-shadow: 0 0 10px var(--neon-pink), 0 0 25px var(--neon-pink), 0 0 40px var(--neon-pink);
+            transform: translateY(-2px);
+        }
+
+        /* Download PDF button specific neon - cyan */
+        #downloadPdfBtn {
+            box-shadow: 0 0 5px var(--neon-cyan), 0 0 15px var(--neon-cyan);
+            border-radius: 10px;
+        }
+        #downloadPdfBtn:hover {
+            box-shadow: 0 0 10px var(--neon-cyan), 0 0 25px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+            transform: translateY(-2px);
+        }
+
+        /* Delete Selected button specific neon - red */
+        #deleteSelectedBtn {
+            box-shadow: 0 0 5px #ff4500, 0 0 15px #ff4500; /* OrangeRed */
+            border-radius: 10px;
+        }
+        #deleteSelectedBtn:hover {
+            box-shadow: 0 0 10px #ff4500, 0 0 25px #ff4500, 0 0 40px #ff4500;
+            transform: translateY(-2px);
+        }
+
+        /* Select Toggle button specific neon - yellow */
+        #selectToggleBtn {
+            box-shadow: 0 0 5px var(--neon-yellow), 0 0 15px var(--neon-yellow);
+            border-radius: 10px;
+        }
+        #selectToggleBtn:hover {
+            box-shadow: 0 0 10px var(--neon-yellow), 0 0 25px var(--neon-yellow), 0 0 40px var(--neon-yellow);
+            transform: translateY(-2px);
+        }
+
+        /* Select All button specific neon - purple */
+        #selectAllBtn {
+            box-shadow: 0 0 5px var(--neon-purple), 0 0 15px var(--neon-purple);
+            border-radius: 10px;
+        }
+        #selectAllBtn:hover {
+            box-shadow: 0 0 10px var(--neon-purple), 0 0 25px var(--neon-purple), 0 0 40px var(--neon-purple);
+            transform: translateY(-2px);
+        }
+
+
+        .neon-input {
+            background-color: #0a0a1f; /* Darker input background */
+            border: 1px solid var(--neon-green); /* Default input border - now green */
+            color: #e0e0e0;
+            border-radius: 8px;
+            padding: 8px 12px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .neon-input:focus {
+            outline: none;
+            border-color: var(--neon-yellow); /* Yellow border on focus */
+            box-shadow: 0 0 5px var(--neon-yellow), 0 0 10px var(--neon-yellow);
+        }
+
+        /* Specific styles for income/expense history items */
+        .income-item {
+            color: var(--neon-cyan); /* Cyan for income */
+            text-shadow: 0 0 3px var(--neon-cyan);
+        }
+
+        .expense-item {
+            color: var(--neon-pink); /* Pink for expense */
+            text-shadow: 0 0 3px var(--neon-pink);
+        }
+
+        /* Custom Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
+            backdrop-filter: blur(5px); /* Blurred background */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a33;
+            border: 2px solid var(--neon-purple); /* Purple neon border for modal */
+            box-shadow: 0 0 15px var(--neon-purple), 0 0 30px var(--neon-purple); /* More prominent shadow */
+            border-radius: 15px;
+            padding: 30px;
+            margin: 15% auto; /* 15% from the top and centered */
+            width: 80%; /* Could be more responsive */
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            transition: color 0.3s; /* Add transition for hover effect */
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: var(--neon-green); /* Green on hover/focus for close button */
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-buttons {
+            display: flex; /* Use flexbox for button layout */
+            justify-content: center; /* Center buttons */
+            gap: 1.5rem; /* Increased space between buttons */
+            margin-top: 1.5rem; /* Increased space above buttons */
+        }
+
+        .modal-buttons button {
+            /* Adjusted for a more "boxy" look while retaining neon style */
+            @apply px-6 py-3 text-base font-semibold rounded-lg; /* Inherit rounded-lg from Tailwind */
+            border: none; /* Ensure no default button border */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px var(--neon-pink), 0 0 15px var(--neon-pink); /* Pink neon for modal buttons */
+            background-color: #007bff; /* Base color, will be covered by shadow */
+            color: #fff;
+        }
+
+        .modal-buttons button:hover {
+             box-shadow: 0 0 10px var(--neon-pink), 0 0 25px var(--neon-pink), 0 0 40px var(--neon-pink);
+             transform: translateY(-2px);
+        }
+
+        /* Checkbox styling */
+        .transaction-checkbox {
+            margin-right: 10px;
+            width: 1.25rem; /* Tailwind w-5 */
+            height: 1.25rem; /* Tailwind h-5 */
+            accent-color: var(--neon-cyan); /* Neon cyan checkbox */
+            cursor: pointer;
+            transition: all 0.15s ease; /* Smooth transition for display, reduced from 0.3s */
+        }
+
+        /* Utility class to hide elements */
+        .hidden-elements {
+            display: none;
+        }
+
+        /* Notification styles */
+        #notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateX(120%);
+            transition: transform 0.5s ease-in-out;
+        }
+        #notification.show {
+            transform: translateX(0);
+        }
+        .income-notification {
+            background-color: rgba(13, 255, 255, 0.8);
+            border: 2px solid var(--neon-cyan);
+            text-shadow: 0 0 5px #0dffff;
+        }
+        .expense-notification {
+            background-color: rgba(255, 0, 255, 0.8);
+            border: 2px solid var(--neon-pink);
+            text-shadow: 0 0 5px #ff00ff;
+        }
+
+    </style>
+</head>
+<body class="selection:bg-cyan-500 selection:text-white">
+    <!-- Main container for the cash book -->
+    <div class="flex flex-col items-center w-full max-w-6xl p-6 space-y-6 md:p-8 neon-box">
+        <h1 class="text-4xl font-bold mb-6 neon-text-main">eLedger</h1>
+
+        <!-- Current Balance Section -->
+        <div class="w-full text-center p-4 rounded-xl shadow-lg neon-box">
+            <p class="text-xl font-semibold mb-2">Current Balance:</p>
+            <p id="currentBalance" class="text-5xl font-bold">₹0.00</p>
+        </div>
+
+        <!-- Transaction Input Section -->
+        <div class="w-full space-y-4">
+            <div>
+                <label for="transactionDate" class="block text-sm font-medium mb-1">Date:</label>
+                <input type="date" id="transactionDate" class="w-full neon-input" required>
+            </div>
+            <div>
+                <label for="transactionTime" class="block text-sm font-medium mb-1">Time:</label>
+                <input type="time" id="transactionTime" class="w-full neon-input" required>
+            </div>
+            <div>
+                <label for="transactionDescription" class="block text-sm font-medium mb-1">Description (Optional):</label>
+                <input type="text" id="transactionDescription" placeholder="e.g., Groceries, Salary" class="w-full neon-input">
+            </div>
+            <div>
+                <label for="transactionAmount" class="block text-sm font-medium mb-1">Amount:</label>
+                <input type="number" id="transactionAmount" placeholder="e.g., 50.00" class="w-full neon-input" step="0.01" required>
+            </div>
+            <div class="flex justify-between space-x-4">
+                <button id="addIncomeBtn" class="flex-1 py-3 neon-button bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">Add Income</button>
+                <button id="addExpenseBtn" class="flex-1 py-3 neon-button bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700">Add Expense</button>
+            </div>
+            <div class="flex justify-between space-x-4 mt-4">
+                 <button id="downloadPdfBtn" class="flex-1 py-3 neon-button bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700">Download PDF</button>
+                 <button id="selectToggleBtn" class="flex-1 py-3 neon-button bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700">Select</button>
+            </div>
+        </div>
+
+        <!-- Transaction History Section -->
+        <div class="w-full">
+            <h2 class="text-2xl font-bold mt-6 mb-4 neon-text-main">Transaction History</h2>
+            <div class="flex justify-end mb-2 pr-2 space-x-2">
+                <button id="selectAllBtn" class="py-2 px-4 neon-button bg-gradient-to-r from-purple-500 to-fuchsia-600 hover:from-purple-600 hover:to-fuchsia-700 hidden-elements">Select All</button>
+            </div>
+            <div id="transactionHistory" class="w-full h-96 overflow-y-auto p-4 space-y-3 rounded-lg neon-box">
+                <!-- History items will be dynamically added here -->
+                <p class="text-center text-gray-500">No transactions yet.</p>
+            </div>
+            <!-- New button for Delete Selected Transactions, initially hidden -->
+            <div class="w-full mt-4">
+                <button id="deleteSelectedBtn" class="w-full py-3 neon-button bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 hidden-elements">Delete Selected</button>
+            </div>
+        </div>
+
+        <!-- Developed by Abhinand AR text -->
+        <div class="mt-8 text-center text-gray-500 text-base">
+            Developed by Abhinand AR
+        </div>
+    </div>
+
+    <!-- Custom Modal for Alerts/Confirmations -->
+    <div id="customModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <p id="modalMessage" class="text-lg mb-4"></p>
+            <div class="modal-buttons">
+                <button id="modalConfirmBtn" class="hidden">Confirm</button>
+                <button id="modalCloseBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification"></div>
+
+    <script>
+        // Global variables for DOM elements
+        const currentBalanceEl = document.getElementById('currentBalance');
+        const transactionDateEl = document.getElementById('transactionDate');
+        const transactionTimeEl = document.getElementById('transactionTime');
+        const transactionDescriptionEl = document.getElementById('transactionDescription');
+        const transactionAmountEl = document.getElementById('transactionAmount');
+        const addIncomeBtn = document.getElementById('addIncomeBtn');
+        const addExpenseBtn = document.getElementById('addExpenseBtn');
+        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const selectToggleBtn = document.getElementById('selectToggleBtn');
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn'); // New Select All button
+        const transactionHistoryEl = document.getElementById('transactionHistory');
+
+        // Modal elements
+        const customModal = document.getElementById('customModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const closeButton = document.querySelector('.close-button');
+        
+        // Notification element
+        const notificationEl = document.getElementById('notification');
+
+        // Array to store transactions
+        let transactions = [];
+        let balance = 0;
+        let isSelectMode = false; // Track the state of select mode
+
+        // --- Utility Functions for Modal and Notification ---
+
+        /**
+         * Displays a custom modal message.
+         * @param {string} message - The message to display.
+         * @param {boolean} [isConfirm=false] - If true, shows a confirm button; otherwise, only an OK button.
+         * @returns {Promise<boolean>} - Resolves with true if confirmed, false if cancelled/closed.
+         */
+        function showCustomModal(message, isConfirm = false) {
+            return new Promise((resolve) => {
+                modalMessage.textContent = message;
+                modalConfirmBtn.classList.add('hidden'); // Hide confirm by default
+                modalCloseBtn.textContent = 'OK'; // Default OK text
+
+                if (isConfirm) {
+                    modalConfirmBtn.classList.remove('hidden');
+                    modalCloseBtn.textContent = 'Cancel'; // For confirmation, the other button is 'Cancel'
+                }
+
+                customModal.style.display = 'flex'; // Show modal
+
+                // Event listeners for modal buttons
+                const onConfirm = () => {
+                    customModal.style.display = 'none';
+                    removeModalListeners();
+                    resolve(true);
+                };
+
+                const onClose = () => {
+                    customModal.style.display = 'none';
+                    removeModalListeners();
+                    resolve(false);
+                };
+
+                modalConfirmBtn.addEventListener('click', onConfirm);
+                modalCloseBtn.addEventListener('click', onClose);
+                closeButton.addEventListener('click', onClose); // Close button (X)
+
+                // Function to remove event listeners to prevent memory leaks
+                function removeModalListeners() {
+                    modalConfirmBtn.removeEventListener('click', onConfirm);
+                    modalCloseBtn.removeEventListener('click', onClose);
+                    closeButton.removeEventListener('click', onClose);
+                }
+            });
+        }
+        
+        /**
+         * Displays a temporary notification.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'income' or 'expense' to determine color.
+         */
+        function showNotification(message, type) {
+            notificationEl.textContent = message;
+            notificationEl.className = ''; // Clear previous classes
+            notificationEl.classList.add('show', `${type}-notification`);
+            
+            setTimeout(() => {
+                notificationEl.classList.remove('show');
+            }, 3000); // Notification disappears after 3 seconds
+        }
+
+        // --- Core Cash Book Functions ---
+
+        /**
+         * Renders the transaction history and updates the balance display.
+         */
+        function renderHistory() {
+            transactionHistoryEl.innerHTML = ''; // Clear existing history
+            if (transactions.length === 0) {
+                transactionHistoryEl.innerHTML = '<p class="text-center text-gray-500">No transactions yet.</p>';
+                // Hide select all button if no transactions
+                selectAllBtn.classList.add('hidden-elements');
+                return;
+            } else {
+                 // Show select all button if there are transactions and in select mode
+                if (isSelectMode) {
+                    selectAllBtn.classList.remove('hidden-elements');
+                }
+            }
+
+
+            // Sort transactions by date and then time (descending)
+            const sortedTransactions = [...transactions].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date}T${a.time}`);
+                const dateTimeB = new Date(`${b.date}T${b.time}`);
+                return dateTimeB - dateTimeA; // Newest first
+            });
+
+            sortedTransactions.forEach((t, index) => {
+                const transactionItem = document.createElement('div');
+                // Decreased animation duration from duration-300 to duration-150
+                transactionItem.className = `p-3 rounded-lg shadow-md flex justify-between items-center transition-all duration-150 transform hover:scale-105 ${t.type === 'income' ? 'income-item' : 'expense-item'}`;
+                transactionItem.style.backgroundColor = t.type === 'income' ? '#203d3d' : '#3d203d'; // Darker background for items
+
+                transactionItem.innerHTML = `
+                    <div class="flex items-center">
+                        <input type="checkbox" class="transaction-checkbox ${isSelectMode ? '' : 'hidden-elements'}" data-id="${t.id}">
+                        <div>
+                            <p class="font-semibold text-base">${t.description || '(No Description)'}</p> <!-- Handles optional description -->
+                            <p class="text-xs text-gray-400">${t.date} ${t.time}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-lg">${t.type === 'income' ? '+' : '-'} ₹${t.amount.toFixed(2)}</span> <!-- Changed to Rupee symbol -->
+                        <button data-index="${t.id}" class="delete-btn text-gray-400 hover:text-red-500 text-lg px-1 rounded-full">&times;</button>
+                    </div>
+                `;
+                transactionHistoryEl.appendChild(transactionItem);
+            });
+
+            // Add event listeners to delete buttons (individual delete)
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const idToDelete = event.target.dataset.index;
+                    const confirmed = await showCustomModal('Are you sure you want to delete this transaction?', true);
+                    if (confirmed) {
+                        deleteTransaction(idToDelete);
+                    }
+                });
+            });
+        }
+
+        /**
+         * Updates the current balance based on all transactions.
+         */
+        function updateBalance() {
+            balance = transactions.reduce((acc, t) => {
+                return t.type === 'income' ? acc + t.amount : acc - t.amount;
+            }, 0);
+            currentBalanceEl.textContent = `₹${balance.toFixed(2)}`; // Changed to Rupee symbol
+        }
+
+        /**
+         * Adds a new transaction to the history.
+         * @param {string} type - 'income' or 'expense'.
+         */
+        async function addTransaction(type) {
+            const date = transactionDateEl.value;
+            const time = transactionTimeEl.value;
+            const description = transactionDescriptionEl.value.trim(); // Trim whitespace
+            const amount = parseFloat(transactionAmountEl.value);
+
+            // Input validation: Date, Time, and Amount are still required
+            if (!date || !time || isNaN(amount) || amount <= 0) {
+                await showCustomModal('Please fill in Date, Time, and a positive Amount.');
+                return;
+            }
+
+            const newTransaction = {
+                id: Date.now().toString(), // Unique ID for deletion
+                date,
+                time,
+                description, // Description is now optional, so no check here
+                amount,
+                type
+            };
+
+            transactions.push(newTransaction);
+            saveTransactions(); // Save to local storage
+            updateBalance();
+            renderHistory();
+            clearInputs();
+            
+            // Determine notification message based on transaction type
+            let notificationMessage;
+            if (type === 'income') {
+                notificationMessage = `₹${amount.toFixed(2)} Credited.`;
+            } else { // expense
+                notificationMessage = `₹${amount.toFixed(2)} Debited.`;
+            }
+            showNotification(notificationMessage, type);
+        }
+
+        /**
+         * Deletes a transaction by its ID.
+         * @param {string} idToDelete - The ID of the transaction to delete.
+         */
+        function deleteTransaction(idToDelete) {
+            transactions = transactions.filter(t => t.id !== idToDelete);
+            saveTransactions();
+            updateBalance();
+            renderHistory();
+        }
+
+        /**
+         * Clears the input fields after a transaction.
+         */
+        function clearInputs() {
+            transactionDescriptionEl.value = '';
+            transactionAmountEl.value = '';
+            // Date and time are intentionally not cleared to allow quick consecutive entries
+        }
+
+        /**
+         * Saves transactions to localStorage.
+         */
+        function saveTransactions() {
+            localStorage.setItem('cashBookTransactions', JSON.stringify(transactions));
+        }
+
+        /**
+         * Loads transactions from localStorage.
+         */
+        function loadTransactions() {
+            const storedTransactions = localStorage.getItem('cashBookTransactions');
+            if (storedTransactions) {
+                transactions = JSON.parse(storedTransactions);
+            }
+        }
+
+        /**
+         * Generates a PDF of the transaction history and current balance.
+         */
+        function downloadTransactionsAsPdf() {
+            if (transactions.length === 0) {
+                showCustomModal('No transactions to download!');
+                return;
+            }
+
+            // Create a new jsPDF instance
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let yPos = 20; // Initial Y position for text
+            const margin = 10;
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Title
+            doc.setFontSize(24);
+            doc.setTextColor(0, 255, 255); // Cyan color
+            doc.text("eLedger Transaction History", pageWidth / 2, yPos, { align: 'center' });
+            yPos += 15;
+
+            doc.setFontSize(12);
+            doc.setTextColor(224, 224, 224); // Light gray color
+            doc.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPos);
+            yPos += 10;
+
+            // Current Balance
+            doc.setFontSize(16);
+            doc.setTextColor(0, 255, 0); // Green color
+            doc.text(`Current Balance: ₹${balance.toFixed(2)}`, margin, yPos);
+            yPos += 20;
+
+            // Table Headers
+            doc.setFontSize(12);
+            doc.setTextColor(255, 255, 0); // Yellow color for headers
+            doc.setFont(undefined, 'bold');
+            doc.text("Date", margin, yPos);
+            doc.text("Time", margin + 30, yPos);
+            doc.text("Description", margin + 60, yPos);
+            doc.text("Type", margin + 140, yPos);
+            doc.text("Amount (₹)", margin + 170, yPos);
+            doc.setFont(undefined, 'normal');
+            yPos += 7; // Small space after headers
+
+            // Draw a line under headers
+            doc.setDrawColor(138, 43, 226); // Purple color for line
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 10;
+
+            // Sort transactions by date and time (ascending for PDF display)
+            const sortedTransactions = [...transactions].sort((a, b) => {
+                const dateTimeA = new Date(`${a.date}T${a.time}`);
+                const dateTimeB = new Date(`${b.date}T${b.time}`);
+                return dateTimeA - dateTimeB; // Oldest first for chronological order in PDF
+            });
+
+
+            // Add transactions
+            doc.setFontSize(10);
+            sortedTransactions.forEach(t => {
+                // Check if new page is needed
+                if (yPos > doc.internal.pageSize.getHeight() - 30) { // 30 is bottom margin
+                    doc.addPage();
+                    yPos = 20; // Reset y position for new page
+
+                    // Re-add headers on new page
+                    doc.setFontSize(12);
+                    doc.setTextColor(255, 255, 0); // Yellow color for headers
+                    doc.setFont(undefined, 'bold');
+                    doc.text("Date", margin, yPos);
+                    doc.text("Time", margin + 30, yPos);
+                    doc.text("Description", margin + 60, yPos);
+                    doc.text("Type", margin + 140, yPos);
+                    doc.text("Amount (₹)", margin + 170, yPos);
+                    doc.setFont(undefined, 'normal');
+                    yPos += 7; // Small space after headers
+                    doc.setDrawColor(138, 43, 226); // Purple color for line
+                    doc.line(margin, yPos, pageWidth - margin, yPos);
+                    yPos += 10;
+                    doc.setFontSize(10); // Reset font size for content
+                }
+
+                const textColor = t.type === 'income' ? [0, 255, 255] : [255, 0, 255]; // Cyan for income, Pink for expense
+                doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+
+                doc.text(t.date, margin, yPos);
+                doc.text(t.time, margin + 30, yPos);
+                doc.text(t.description || '(No Description)', margin + 60, yPos);
+                doc.text(t.type.charAt(0).toUpperCase() + t.type.slice(1), margin + 140, yPos); // Capitalize type
+                doc.text(`${t.type === 'income' ? '+' : '-'} ${t.amount.toFixed(2)}`, margin + 170, yPos);
+                yPos += 7; // Line height
+            });
+
+            // Save the PDF
+            doc.save('eLedger_Transactions.pdf');
+        }
+
+        /**
+         * Deletes selected transactions from the history.
+         */
+        async function deleteSelectedTransactions() {
+            const selectedCheckboxes = document.querySelectorAll('.transaction-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                await showCustomModal('No transactions selected for deletion.');
+                return;
+            }
+
+            const confirmed = await showCustomModal(`Are you sure you want to delete ${selectedCheckboxes.length} selected transactions?`, true);
+            if (!confirmed) {
+                return;
+            }
+
+            const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.dataset.id);
+            transactions = transactions.filter(t => !idsToDelete.includes(t.id));
+
+            saveTransactions();
+            updateBalance();
+            renderHistory();
+            await showCustomModal(`${selectedCheckboxes.length} transactions deleted.`);
+
+            // After deletion, if select mode was active, turn it off
+            if (isSelectMode) {
+                toggleSelectMode();
+            }
+        }
+
+        /**
+         * Toggles the visibility of checkboxes and the Delete Selected button.
+         */
+        function toggleSelectMode() {
+            isSelectMode = !isSelectMode; // Toggle the state
+            const checkboxes = document.querySelectorAll('.transaction-checkbox');
+            checkboxes.forEach(cb => {
+                if (isSelectMode) {
+                    cb.classList.remove('hidden-elements');
+                } else {
+                    cb.classList.add('hidden-elements');
+                    cb.checked = false; // Uncheck all when turning off select mode
+                }
+            });
+
+            if (isSelectMode) {
+                deleteSelectedBtn.classList.remove('hidden-elements');
+                selectAllBtn.classList.remove('hidden-elements'); // Show Select All button
+                selectToggleBtn.textContent = 'Done';
+            } else {
+                deleteSelectedBtn.classList.add('hidden-elements');
+                selectAllBtn.classList.add('hidden-elements'); // Hide Select All button
+                selectToggleBtn.textContent = 'Select';
+            }
+            renderHistory(); // Re-render to apply hidden-elements class correctly on new transactions
+        }
+
+        /**
+         * Selects or deselects all visible transaction checkboxes.
+         */
+        function selectAllTransactions() {
+            const checkboxes = document.querySelectorAll('.transaction-checkbox:not(.hidden-elements)');
+            // Determine if all are currently checked
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked; // Toggle based on whether all are checked
+            });
+        }
+
+
+        // --- Initialization and Event Listeners ---
+
+        window.onload = function() {
+            // Set current date and time by default
+            const now = new Date();
+            transactionDateEl.value = now.toISOString().split('T')[0];
+            transactionTimeEl.value = now.toTimeString().split(' ')[0].substring(0, 5);
+
+            loadTransactions(); // Load transactions on page load
+            updateBalance();    // Update balance based on loaded data
+            renderHistory();    // Render history based on loaded data (initial state, checkboxes hidden)
+
+            // Event listeners for buttons
+            addIncomeBtn.addEventListener('click', () => addTransaction('income'));
+            addExpenseBtn.addEventListener('click', () => addTransaction('expense'));
+            downloadPdfBtn.addEventListener('click', downloadTransactionsAsPdf);
+            selectToggleBtn.addEventListener('click', toggleSelectMode);
+            deleteSelectedBtn.addEventListener('click', deleteSelectedTransactions);
+            selectAllBtn.addEventListener('click', selectAllTransactions); // Event listener for Select All button
+
+            // Keyboard support for Enter key on amount field to quickly add income
+            transactionAmountEl.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent default form submission
+                    addIncomeBtn.click(); // Simulate clicking income button
+                }
+            });
+
+            // Close modal when clicking outside of it
+            customModal.addEventListener('click', (event) => {
+                if (event.target === customModal) {
+                    // Only close if it's an alert (no confirm button visible), to avoid accidental cancellation of confirmations
+                    if (modalConfirmBtn.classList.contains('hidden')) {
+                        customModal.style.display = 'none';
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
