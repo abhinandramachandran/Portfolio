@@ -3,7 +3,7 @@
 ## Basic Details
 - Individual
 ### Team Members
-### Team Lead: Abhinand AR - [Your College Name]
+### Team Lead: Abhinand AR 
 
 ### Project Description
 - eLedger is a simple yet stylish web-based personal cash book application designed to help users effortlessly track their income and expenses. It offers a real-time balance display, a chronological transaction history, and robust PDF export capabilities for detailed financial reporting.
